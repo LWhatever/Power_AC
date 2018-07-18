@@ -6,7 +6,7 @@ output SCLK,
 input SOMI,
 output reg CS, 
 output reg [15:0] data0,data1,data2,data3,
-output reg [13:0] MAX
+output reg [13:0] MAX1, MAX2
 );
 
 reg [7:0]cnt = 0;
@@ -17,10 +17,8 @@ wire done;
 wire [15:0] rddat;
 wire srt;
 wire clk_1M;
-reg start_end;
+reg start_end1, start_end2;
 
-//reg [31:0] sum;
-//reg chk;
 
 clkdiv clkdiv_inst
 (
@@ -30,17 +28,17 @@ clkdiv clkdiv_inst
 );
 
 AD a1(clk_1M,1'b1,start,CFR,rddat,done,SIMO,SCLK,SOMI);
-reg [15:0] CNT;
-reg [13:0] max;
+reg [15:0] CNT1, CNT2;
+reg [13:0] max1, max2;
 
 always@(posedge clk_1M or negedge rst)
 begin
 	if(!rst)
 	begin
 		state <= 3'b000;
-		CNT <= 0;
-//		chk <= 1'b1;
-		start_end <= 1'b0;
+		CNT1 <= 0;
+		start_end1 <= 1'b0;
+		start_end2 <= 1'b0;
 	end
 	else
 	case(state)
@@ -87,10 +85,9 @@ begin
 		end
 	end
 	3'b010:begin
-		if(CNT == 0)
+		if(CNT1 == 0)
 		begin
-//			chk <= 1'b1;
-			start_end <= 1'b1;
+			start_end1 <= 1'b1;
 		end
 		if(cnt<=50)
 		begin
@@ -106,18 +103,17 @@ begin
 		end
 		else if(cnt>=70)					//Sample Rate = 17857Hz
 		begin
+			CNT1 <= CNT1 + 16'd1;			//判断是否完成一周期
+			if(CNT1 == 16'd17857)
+			begin
+				start_end1 <= 1'b0;
+				CNT1 <= 0;
+			end
 			CS<=1'b1;
 			start<=0;
 			cnt<=0;
-//			chk <= 0;
 			state <= 3'b011;
 			data0 <= rddat;
-			CNT <= CNT + 16'd1;			//判断是否完成一周期
-			if(CNT == 16'd17857)
-			begin
-				start_end <= 1'b0;
-				CNT <= 0;
-			end
 		end
 	end
 	3'b011:begin
@@ -165,6 +161,10 @@ begin
 		end
 	end
 	3'b101:begin
+		if(CNT2 == 0)
+		begin
+			start_end2 <= 1'b1;
+		end
 		if(cnt<=50)
 		begin
 			cnt<=cnt+1'b1;
@@ -179,6 +179,12 @@ begin
 		end
 		else if(cnt>=70)
 		begin
+			CNT2 <= CNT2 + 16'd1;
+			if(CNT2 == 16'd17857)
+			begin
+				start_end2 <= 1'b0;
+				CNT2 <= 0;
+			end
 			CS<=1'b1;
 			start<=0;
 			cnt<=0;
@@ -193,15 +199,28 @@ always@(posedge CS)
 begin
 if(state == 3'b010)
 begin
-	if(start_end == 1)
+	if(start_end1 == 1)
 	begin
-		if(data0[15:2]>max)
-			max<=data0[15:2];
+		if(data0[15:2]>max1)
+			max1<=data0[15:2];
 	end
-	else if(start_end == 0)
+	else if(start_end1 == 0)
 	begin
-		MAX <= max;
-		max <= 0;
+		MAX1 <= max1;
+		max1 <= 0;
+	end
+end
+else if(state == 3'b101)
+begin
+	if(start_end2 == 1)
+	begin
+		if(data3[15:2]>max2)
+			max2<=data3[15:2];
+	end
+	else if(start_end2 == 0)
+	begin
+		MAX2 <= max2;
+		max2 <= 0;
 	end
 end
 end
