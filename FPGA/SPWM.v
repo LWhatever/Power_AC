@@ -71,7 +71,7 @@ clkdiv clkdiv_inst(				//gain a clock of 19.5kHz
 	
 clkdiv clkdiv_inst2(				//gain a clock of 10MHz
 	.clk(clk_50m),
-	.div(12'd4),
+	.div(12'd5),
 	.clkdiv(clk_10m)
 	);
 
