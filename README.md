@@ -1,1 +1,1 @@
-# SinglePhase AC-DC
+# SinglePhase SPWM Inverter
